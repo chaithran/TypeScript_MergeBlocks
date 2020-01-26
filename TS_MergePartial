@@ -1,0 +1,96 @@
+ mergeBlocks_Partial(selectedNode)
+  {
+    var text: any;
+    var htmlContent = document.createElement('html');
+    if (window.getSelection) {
+    // console.log(window.getSelection().getRangeAt(0).startContainer.parentNode.parentNode);
+      text = window.getSelection();
+      if (text.rangeCount) {
+        var htmlBody = document.createElement('span');       
+        for (var i = 0; i < text.rangeCount; i++) {
+          // window.getSelection().getRangeAt(i).startContainer.parentNode.parentNode['style'].backgroundColor='red';
+          var htmlCode = window.getSelection().getRangeAt(i).cloneContents();
+          htmlBody.appendChild(htmlCode);
+        }
+        htmlContent.appendChild(htmlBody);
+      }
+    } else if (document.getSelection() && document.getSelection().type != "Control") {
+    }
+    this.designerService.loadPartialMerge.next(true);//Behavioral subject
+    this.designerService.partialMergeBlockTitle.next(this.designerService.partialMergeBlockTitle.value.length>0?this.designerService.partialMergeBlockTitle.value:selectedNode.item);    
+    this.designerService.partialMergeContent.next(this.designerService.partialMergeContent.value+" "+htmlContent.innerHTML);     
+  }
+  
+  //Angular componenet .html
+   <ng-template contextMenuItem let-item (execute)="mergeBlocks_Partial($event.item)">
+                            {{'screens.project-designer.iconview.partialMerge' | translate}}
+   </ng-template>
+   
+   //partial-merge.component.html
+   <div class="partialMergeMain" style="">
+  <nb-card-header class="PartialMergeHeader">Partial Merge
+     <button aria-label="Close" class="close" type="button">
+       <span aria-hidden="true">×</span></button>
+  </nb-card-header>
+  <div class="partialMergeBody">
+      <div class="form-group">
+          <label>Block Title</label>
+          <input class="form-control custom-form-input" id="idBlockTitle" value="{{blockTitle}}" placeholder="Enter Block Title" />
+      </div>
+      <div >
+        <!--  <label>Block Content</label> -->
+        <div class="readonly" [innerHTML]="this.blockContent"></div>
+    </div>
+  </div>
+  <div class="col-sm-12 footerAttribute">
+    <button nbButton type="button" class="menu-btn-cancel importCancel" style="color:black;"
+      (click)="onCancel()"><label class="menu-txt-cancel canclebuttonLebal">Cancel</label></button>
+    &nbsp;&nbsp;&nbsp;&nbsp;
+    <span ><button type="submit" class="menu-btn-save importAddButtton" 
+        (click)="onAddBlock()">Add Block</button></span>
+  </div>
+ </div>
+
+//partial-merge.component.ts
+import { Component, OnInit } from '@angular/core';
+import { NbDialogRef } from '@nebular/theme';
+import { EventAggregatorService } from '../../../../../../../shared/services/event/event.service';
+import { eventConstantsEnum } from '../../../../../../../@models/common/eventConstants';
+import { DesignerService } from '../../../../../services/designer.service';
+
+@Component({
+  selector: 'ngx-partial-merge',
+  templateUrl: './partial-merge.component.html',
+  styleUrls: ['./partial-merge.component.scss']
+})
+export class PartialMergeComponent implements OnInit {
+  blockContent:string= "";
+  blockTitle:string="";
+  constructor(protected ref: NbDialogRef<any>, private _eventService: EventAggregatorService,private designerService:DesignerService) { }
+
+  ngOnInit() {
+    this.designerService.partialMergeBlockTitle.subscribe(title=>
+      {
+        this.blockTitle=title;
+      })
+    this.designerService.partialMergeContent.subscribe(content=>
+      {
+        this.blockContent=content;
+      })
+  }
+  onAddBlock() {
+    let ele = document.getElementById('idBlockTitle') as HTMLElement;
+    if (ele != undefined) {
+      var title = ele['value'];
+      let content = this.blockContent;
+      this._eventService.getEvent(eventConstantsEnum.projectDesigner.iconicViewTemplateSection.addBlocksPartialMerge).publish({ title, content });
+    this.designerService.loadPartialMerge.next(false);
+    // this.ref.close();
+    }
+  }
+  onCancel() {
+    this.designerService.loadPartialMerge.next(false);
+    // this.ref.close();
+  }
+
+}
